@@ -32,7 +32,7 @@ Setup (once per machine): `uv venv ~/.venvs/motion-design && uv pip install --py
 3. **Concept, then three storyboards** (DIRECTION.md §3): mine the material, diverge, then three genuinely different films, not three colourways. Show a short table with your pick and why each loser lost; continue on your pick unless the user asked to choose.
 4. **Beat map** (`BEATMAP.md`): BPM → frames per beat, every scene and reveal on the grid, the music **drop on the key visual moment**. Nothing still for more than ~1 s, text holds ≥ 2.5 s and ~1 s per 3 words.
 5. **Stills before motion**: render 4+ stills or one frame per beat (`render.py probe|beats`), **look at them**, fix framing, legibility, overlap; send the sheet to the user and keep working.
-6. **Audio**: music + SFX by peak, or synthesised score; voice first if narrated (the voice drives the timeline).
+6. **Audio**: music + SFX by peak, or synthesised score; voice first if narrated (the voice drives the timeline). If narrated, check for a Gemini key at the start (VOICE.md); if none, ask where it is or whether the lower-quality macOS voice is fine: never fall back silently.
 7. **Full render** → pop scan → mux → **critique loop** (§4) until every score is 8+.
 8. **Deliver** (DIRECTION.md §6): the MP4 in the working directory, a scene table, the fact-check list, the cheap knobs (length, a line of copy, voice, music, format).
 

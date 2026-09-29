@@ -1,12 +1,13 @@
 """Voice-over: script.json -> one WAV per line -> trimmed -> timeline.json (the picture reads it).
 
-  python voice.py script.json [--engine auto|gemini|say] [--voice NAME] [--out voice/]
+  python voice.py script.json [--engine gemini|say|auto] [--voice NAME] [--out voice/]
 
 script.json = [["chapter", "line text"], ...]  (write for the ear; numbers spelled as spoken)
 Engines:
   gemini : Gemini TTS. Key from $GEMINI_API_KEY, ~/.config/gemini/key, or ./.env (GEMINI_API_KEY=...). Never printed.
   say    : macOS `say` (keyless, lower quality). Picks an Enhanced/Premium voice if installed, else Samantha.
-  auto   : gemini if a key is found, else say.
+  auto   : gemini if a key is found, else say (with a warning). Default is gemini: no key = stop, so the
+           low-quality fallback is never chosen silently; use `say` only once the user has picked it.
 Output: voice/line_XX.wav (44.1 kHz mono), timeline.json = {lines:[{i,ch,text,start,dur,file}], total, engine, voice}
 Timing: first line at 1.2 s, 0.45 s between lines, +0.9 s at a chapter change, 2.5 s tail.
 """
@@ -88,7 +89,7 @@ def trim(src, dst):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("script"); ap.add_argument("--engine", default="auto"); ap.add_argument("--voice", default=None)
+    ap.add_argument("script"); ap.add_argument("--engine", default="gemini"); ap.add_argument("--voice", default=None)
     ap.add_argument("--out", default="voice")
     ap.add_argument("--only", default="", help="comma-separated line indexes to regenerate; other clips are kept")
     a = ap.parse_args()
@@ -96,7 +97,8 @@ def main():
     out = Path(a.out); out.mkdir(exist_ok=True)
     key = find_key() if a.engine in ("auto", "gemini") else None
     engine = "gemini" if key else "say"
-    if a.engine == "gemini" and not key: sys.exit("no Gemini key found (see VOICE.md: ask where it is, never in chat)")
+    if a.engine == "gemini" and not key: sys.exit("no Gemini key found: ask the user where it is or whether to use the macOS voice (VOICE.md), never in chat")
+    if a.engine == "auto" and not key: print("WARNING: no Gemini key, falling back to macOS `say` (lower quality). Tell the user.", file=sys.stderr)
     todo = [int(x) for x in a.only.split(",") if x.strip()] or list(range(len(lines)))
     srcs = [out / f"line_{k:02d}.wav" for k in range(len(lines))]   # kept clips are re-trimmed (idempotent)
     if engine == "gemini":

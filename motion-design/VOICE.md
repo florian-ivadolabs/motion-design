@@ -5,17 +5,17 @@ The voice drives the timeline: write the script, generate and measure every line
 ## The key: find it, else ask where it is (never in chat)
 `scripts/voice.py` looks, without printing any value, in: `$GEMINI_API_KEY`, `~/.config/gemini/key` (bare key), `./.env` or `../.env` (`GEMINI_API_KEY=…`). Check presence yourself only by name (`test -s ~/.config/gemini/key`, `grep -c '^GEMINI_API_KEY=' .env`).
 
-If none is found, **don't block**: write the script and start the picture, and ask once (AskUserQuestion):
+If none is found, **don't block and don't fall back silently**: write the script and start the picture, and ask once (AskUserQuestion), with "It's in a file" first as the recommended option:
 - **"It's in a file"**: they give the path; if it is a `.env`, run voice.py from that folder, else copy the key to `~/.config/gemini/key` (chmod 600) without printing it.
 - **"Set it up"**: give them the one-liner to run themselves: `mkdir -p ~/.config/gemini && printf '%s' 'YOUR_KEY' > ~/.config/gemini/key && chmod 600 ~/.config/gemini/key` (AI Studio → Get API key; free tier).
 - **"No key: macOS voice"**: `--engine say` (keyless, lower quality; the script picks an Enhanced/Premium English voice if installed, else Samantha). Suggest installing an Enhanced voice (System Settings → Accessibility → Spoken Content) for a big quality jump.
 - **"No voice"**: subtitles + music only.
-Never ask for the key in chat. If it's pasted anyway, write it to `~/.config/gemini/key` (chmod 600) and tell the user to rotate it. When running autonomously with no user, use `say` and say so.
+Never ask for the key in chat. If it's pasted anyway, write it to `~/.config/gemini/key` (chmod 600) and tell the user to rotate it. When running autonomously with no user, use `say` and state it plainly in the delivery ("voice: macOS say, lower quality; a Gemini key gives a far better voice").
 Other engines (Cartesia, ElevenLabs, OpenAI TTS) work the same way if the user has a key: one clip per line, then the same trim + timeline step.
 
 ## Pipeline (scripts/voice.py)
 1. **Script** `script.json = [["chapter", "line"], …]`. Write for the ear: short clauses, one idea per line, numbers spelled as spoken ("seven hundred", "twenty twenty-six"). Name chapters as actions for the viewer; end on a recap or call to action.
-2. **TTS** (`python voice.py script.json --engine auto --voice Kore`): Gemini lists models and picks the newest flash TTS; 4 lines in parallel with retries. Traps handled: newer models return a full RIFF WAV (written as is), older raw 24 kHz L16 (header added); a style prefix like "Say calmly:" is **read aloud**, so send the plain line only. Pick a prebuilt voice to match tone and audience and tell the user which one so they can swap.
+2. **TTS** (`python voice.py script.json --voice Kore`; the default engine is `gemini` and stops if no key is found, `--engine say` only once the user chose it): Gemini lists models and picks the newest flash TTS; 4 lines in parallel with retries. Traps handled: newer models return a full RIFF WAV (written as is), older raw 24 kHz L16 (header added); a style prefix like "Say calmly:" is **read aloud**, so send the plain line only. Pick a prebuilt voice to match tone and audience and tell the user which one so they can swap.
 3. **Verify** (Gemini only): `python verify_voice.py timeline.json` transcribes each clip back and flags every substituted word after normalising numbers; regenerate failures with `voice.py --only <i>`. Loose matching misses real errors ("feature" heard as "future"). With `say`, listen to 2–3 lines instead (or check durations are plausible: ~2.5–3 words/s).
 4. **Trim & time** (done by the script): silence stripped both ends; first line at 1.2 s, 0.45 s between lines, +0.9 s at a chapter change, 2.5 s tail → `timeline.json = {lines:[{i,ch,text,start,dur,file}], total, engine, voice}`.
 
