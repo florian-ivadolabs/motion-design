@@ -16,8 +16,19 @@ The film is one HTML page whose every frame is a pure function of time (`window.
 
 ## Install
 
+The skill lives in the `motion-design/` folder. Clone the repo anywhere, then link that folder into your Claude Code skills:
+
 ```bash
-git clone https://github.com/florian-ivadolabs/motion-design ~/.claude/skills/motion-design
+git clone https://github.com/florian-ivadolabs/motion-design ~/src/motion-design
+mkdir -p ~/.claude/skills
+ln -s ~/src/motion-design/motion-design ~/.claude/skills/motion-design
+```
+
+`git pull` in the clone updates the skill. For a project-only install, link it into `<project>/.claude/skills/` instead, or copy the folder if you'd rather not keep a clone.
+
+One-time setup of the render environment:
+
+```bash
 uv venv ~/.venvs/motion-design
 uv pip install --python ~/.venvs/motion-design/bin/python playwright imageio-ffmpeg numpy pillow
 ~/.venvs/motion-design/bin/python -m playwright install chromium
@@ -27,19 +38,21 @@ Optional, for voice-over: a Gemini API key in `$GEMINI_API_KEY` or `~/.config/ge
 
 Then ask Claude Code for a video, or type `/motion-design <your brief>`.
 
-## Files
+## Layout
 
-| File | Role |
-| --- | --- |
-| `SKILL.md` | The direction loop, render, gotchas, critique loop, delivery checklist |
-| `DIRECTION.md` | Research, style reference, concept and storyboards, beat sheet, taste |
-| `DEMO.md` | Films over real product screens |
-| `ENGINE.md` | The `seek(t)` engine and its idioms |
-| `AUDIO.md` | Music, SFX, synthesised score, loudness |
-| `VOICE.md` | Narration pipeline |
-| `ASSETS.md` | Free sources for photos, video, logos, icons, fonts |
-| `REMAKE.md` | Frame-locked remakes |
-| `scripts/` | Film template, renderer, synth, voice and verification, audio, remake tools |
+```
+LICENSE, README.md, CHANGES.md   repo files (not loaded by Claude)
+motion-design/                   the skill
+  SKILL.md                       the direction loop, render, gotchas, critique loop, delivery checklist
+  DIRECTION.md                   research, style reference, concept and storyboards, beat sheet, taste
+  DEMO.md                        films over real product screens
+  ENGINE.md                      the seek(t) engine and its idioms
+  AUDIO.md                       music, SFX, synthesised score, loudness
+  VOICE.md                       narration pipeline
+  ASSETS.md                      free sources for photos, video, logos, icons, fonts
+  REMAKE.md                      frame-locked remakes
+  scripts/                       film template, renderer, synth, voice and verification, audio, remake tools
+```
 
 ## Credits
 
