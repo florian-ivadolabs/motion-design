@@ -16,7 +16,16 @@ The film is one HTML page whose every frame is a pure function of time (`window.
 
 ## Install
 
-The skill lives in the `motion-design/` folder. Clone the repo anywhere, then link that folder into your Claude Code skills:
+**Claude Code, as a plugin (recommended).** In Claude Code:
+
+```
+/plugin marketplace add florian-ivadolabs/motion-design
+/plugin install motion-design@florian-ivadolabs
+```
+
+Updates come with `/plugin marketplace update florian-ivadolabs`.
+
+**Claude Code, by hand.** Clone the repo anywhere and link the skill folder:
 
 ```bash
 git clone https://github.com/florian-ivadolabs/motion-design ~/src/motion-design
@@ -24,7 +33,9 @@ mkdir -p ~/.claude/skills
 ln -s ~/src/motion-design/motion-design ~/.claude/skills/motion-design
 ```
 
-`git pull` in the clone updates the skill. For a project-only install, link it into `<project>/.claude/skills/` instead, or copy the folder if you'd rather not keep a clone.
+`git pull` in the clone updates it. For one project only, link it into `<project>/.claude/skills/` instead.
+
+**Claude.ai.** Zip the `motion-design/` folder and upload it in Settings → Capabilities → Skills. Rendering needs Playwright and ffmpeg, so the full pipeline runs best in Claude Code.
 
 One-time setup of the render environment:
 
@@ -41,6 +52,7 @@ Then ask Claude Code for a video, or type `/motion-design <your brief>`.
 ## Layout
 
 ```
+.claude-plugin/                  plugin marketplace manifest
 LICENSE, README.md, CHANGES.md   repo files (not loaded by Claude)
 motion-design/                   the skill
   SKILL.md                       the direction loop, render, gotchas, critique loop, delivery checklist

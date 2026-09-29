@@ -1,0 +1,22 @@
+{
+  "name": "florian-ivadolabs",
+  "owner": {
+    "name": "Florian Soudan"
+  },
+  "metadata": {
+    "description": "Motion-design videos made 100% in code, as a Claude Code skill",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "motion-design",
+      "description": "Direct and build finished motion-design videos in code: HTML seek(t) engine rendered with Playwright and ffmpeg, product-screen demos and tutorials, Gemini voice-over, synthesised score, critique loop.",
+      "version": "1.0.0",
+      "source": "./",
+      "strict": false,
+      "license": "MIT",
+      "homepage": "https://github.com/florian-ivadolabs/motion-design",
+      "skills": ["./motion-design"]
+    }
+  ]
+}
