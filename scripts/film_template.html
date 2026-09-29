@@ -1,0 +1,86 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>film</title>
+<!-- Starter for a seek(t) film. Copy next to render.py, serve the folder, render with W/H matching ?w=&h= in FILM_URL. -->
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600&family=Instrument+Serif:ital@1&family=JetBrains+Mono:wght@500&display=block" rel="stylesheet">
+<style>
+html,body{margin:0;background:#000;overflow:hidden}
+#stage{position:relative;overflow:hidden;font-family:'Inter Tight',sans-serif;letter-spacing:-.035em}
+.a{position:absolute;left:0;top:0}
+.mask{overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em;white-space:nowrap}
+.mask>div{will-change:transform}
+em{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400;letter-spacing:-.01em}
+.label{font:500 24px 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase}
+</style></head><body>
+<div id="stage"><div id="cam" class="a"><div id="world" class="a"></div></div><svg id="fx" class="a" style="overflow:visible;z-index:90"></svg></div>
+<script>
+// ---------- format ----------
+const Q = new URLSearchParams(location.search);
+const W = +(Q.get('w') || 1920), H = +(Q.get('h') || 1080), VERT = H > W;
+const stage = document.getElementById('stage'); stage.style.width = W + 'px'; stage.style.height = H + 'px';
+document.getElementById('fx').setAttribute('width', W); document.getElementById('fx').setAttribute('height', H);
+for (const id of ['cam', 'world']) Object.assign(document.getElementById(id).style, {width: W + 'px', height: H + 'px'});
+
+// ---------- time helpers ----------
+const clamp = (x, a = 0, b = 1) => x < a ? a : x > b ? b : x, lerp = (a, b, u) => a + (b - a) * u;
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const E = { io: u => u < .5 ? 4 * u ** 3 : 1 - (-2 * u + 2) ** 3 / 2, out: u => 1 - (1 - u) ** 3, in: u => u ** 3, in4: u => u ** 4,
+  o5: u => 1 - (1 - u) ** 5, io5: u => u < .5 ? 16 * u ** 5 : 1 - (-2 * u + 2) ** 5 / 2, expo: u => u >= 1 ? 1 : 1 - 2 ** (-10 * u) };
+function step(tau, f = 2.2, z = .8) { if (tau <= 0) return 0; const w = 2 * Math.PI * f, wd = w * Math.sqrt(1 - z * z);
+  return 1 - Math.exp(-z * w * tau) * (Math.cos(wd * tau) + z * w / wd * Math.sin(wd * tau)); }
+function mulberry32(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rnd = mulberry32(7);
+
+// ---------- music grid ----------
+const BPM = 120, BEAT = 60 / BPM, BAR = 4 * BEAT;
+
+// ---------- DOM helpers ----------
+const $ = id => document.getElementById(id), world = $('world'), fx = $('fx');
+let CUR = world; // scene() points this at the scene root while build() runs, so everything built belongs to its scene
+function mk(html, z = 5, parent = CUR) { parent.insertAdjacentHTML('beforeend', html); const e = parent.lastElementChild; e.style.zIndex = z; return e; }
+// lines: array of strings, *word* = serif italic accent. Returns {el, set(t, tin, tout)}
+function lines(arr, {x, y, size, color = '#fff', em = color, weight = 600, lh = 1.0, gap = .12}) {
+  const el = mk(`<div class="a" style="left:${x}px;top:${y}px;font-size:${size}px;line-height:${lh};font-weight:${weight};color:${color}">` +
+    arr.map(s => `<div class="mask"><div>${s.replace(/\*(.+?)\*/g, `<em style="color:${em}">$1</em>`)}</div></div>`).join('') + '</div>', 20);
+  const inner = [...el.querySelectorAll('.mask>div')];
+  return { el, set(t, tin, tout) { inner.forEach((d, k) => { const u = E.o5(seg(t, tin + k * gap, tin + k * gap + .66));
+    const o = tout == null ? 0 : E.in(seg(t, tout + k * .06, tout + k * .06 + .33)); d.style.transform = `translateY(${(1 - u) * 110 - o * 110}%)`; }); } };
+}
+function measure(text, font, spacingPx = 0) { const c = document.createElement('canvas').getContext('2d'); c.font = font; c.letterSpacing = spacingPx + 'px'; return c.measureText(text).width; }
+
+// ---------- scenes: {id, dur, bg, build(), draw(lt), portal(lt) -> {x,y,r}} ----------
+const SCENES = [];
+const scene = (s) => { s.root = mk(`<div class="a" style="width:${W}px;height:${H}px"></div>`, 1, world); CUR = s.root; s.build && s.build(s); CUR = world; SCENES.push(s); };
+
+// Example scene (replace): a headline and a portal dot.
+scene({ id: 'hello', dur: 3.0, bg: '#0D1F26',
+  build(s) { s.h = lines(['Every frame is', 'a *function* of time.'], {x: VERT ? 90 : 140, y: VERT ? 500 : 300, size: VERT ? 130 : 150, color: '#fff', em: '#FFB23F'}); },
+  draw(s, lt) { s.h.set(lt, .2); },
+  portal: () => ({x: W / 2, y: H * .75, r: 18}) });
+scene({ id: 'end', dur: 2.0, bg: '#FFB23F', draw() {}, portal: () => ({x: W / 2, y: H / 2, r: 0}) });
+
+let t0 = 0; SCENES.forEach(s => { s.start = t0; t0 += s.dur; });
+const TOTAL = t0, DIVE = BEAT;
+
+// ---------- optional narration timeline (VOICE.md) ----------
+let TL = null; // {lines:[{i,ch,text,start,dur}], total}
+const currentLine = t => TL && [...TL.lines].reverse().find(l => l.start - .15 <= t);
+
+// ---------- seek ----------
+window.seek = async (t) => {
+  const i = Math.max(0, SCENES.findLastIndex(s => t >= s.start)), S = SCENES[i], N = SCENES[i + 1], lt = t - S.start;
+  stage.style.background = S.bg;
+  SCENES.forEach(s => s.root.style.visibility = s === S ? 'inherit' : 'hidden');
+  S.draw(S, lt);
+  // arrival from the previous dive, then the dive into this scene's portal
+  const arrive = i > 0 ? lerp(.86, 1, E.o5(seg(lt, 0, .8))) : 1;
+  const p = N ? seg(lt, S.dur - DIVE, S.dur) : 0, P = S.portal(lt);
+  const push = Math.exp(Math.log(6) * E.in4(p));
+  world.style.transformOrigin = `${P.x}px ${P.y}px`;
+  world.style.transform = `scale(${arrive * push})`;
+  fx.innerHTML = p > 0 ? `<circle cx="${P.x}" cy="${P.y}" r="${P.r * lerp(1, Math.hypot(W, H) * 1.1 / Math.max(P.r, 8) / 6, E.in(p)) * push * arrive}" fill="${N.bg}"/>` : '';
+};
+(async () => {
+  try { TL = await (await fetch('timeline.json')).json(); } catch (e) {}
+  await document.fonts.ready; await window.seek(0); window.TOTAL = TOTAL; window.ready = true;
+})();
+</script></body></html>
